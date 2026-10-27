@@ -1,0 +1,11 @@
+const methods=new Set(['get','post','put','patch','delete','head','options','trace']);
+export async function analyze(before,after){
+ for(const spec of [before,after])if(!spec||Array.isArray(spec)||!String(spec.openapi).startsWith('3.')||!spec.paths||typeof spec.paths!=='object'||Array.isArray(spec.paths))throw Error('Supply OpenAPI 3 JSON objects with a paths object.');
+ const changes=[];
+ const add=async(kind,pointer,message)=>{const text=JSON.stringify({kind,message,pointer});const hash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text));changes.push({kind,pointer,message,id:Array.from(new Uint8Array(hash)).map(x=>x.toString(16).padStart(2,'0')).join('').slice(0,16)});};
+ for(const[path,oldPath]of Object.entries(before.paths)){const newPath=after.paths[path]||{};for(const[method,old]of Object.entries(oldPath)){if(!methods.has(method))continue;const pointer='/paths/'+path.replaceAll('~','~0').replaceAll('/','~1')+'/'+method,newOp=newPath[method];if(!newOp){await add('operation_removed',pointer,`${method.toUpperCase()} ${path} was removed.`);continue;}
+ const params=(p,o)=>new Map([...(p.parameters||[]),...(o.parameters||[])].filter(x=>!x.$ref).map(x=>[JSON.stringify([x.in,x.name]),x]));const prev=params(oldPath,old),next=params(newPath,newOp);for(const[key,p]of next)if(p.required&&!prev.get(key)?.required)await add('required_parameter',pointer,`${method.toUpperCase()} ${path} now requires ${p.in} parameter ${p.name}.`);
+ for(const status of Object.keys(old.responses||{}))if(status.startsWith('2')&&!(status in(newOp.responses||{}))&&!('2XX'in(newOp.responses||{}))&&!('default'in(newOp.responses||{})))await add('success_response_removed',pointer+'/responses/'+status,`${method.toUpperCase()} ${path} no longer declares success response ${status}.`);
+ if(newOp.requestBody?.required&&!old.requestBody?.required)await add('required_request_body',pointer+'/requestBody',`${method.toUpperCase()} ${path} now requires a request body.`);
+ }}return{changes,breaking_count:changes.length,coverage:'Operation removal, newly required inline parameters/request bodies, removed success codes. References, schema compatibility, authentication and runtime behavior are not evaluated.',mode:'analysis-only'};
+}

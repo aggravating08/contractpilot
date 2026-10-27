@@ -1,0 +1,27 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Fictional Parcel API",
+    "version": "1.0"
+  },
+  "paths": {
+    "/parcels": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "List parcels"
+          }
+        }
+      }
+    },
+    "/parcels/{id}": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Get parcel"
+          }
+        }
+      }
+    }
+  }
+}
