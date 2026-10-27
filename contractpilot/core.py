@@ -8,11 +8,35 @@ import urllib.request
 METHODS = {'get', 'post', 'put', 'patch', 'delete', 'head', 'options', 'trace'}
 
 
+
+def validate_spec(spec):
+    if not isinstance(spec, dict) or not str(spec.get('openapi', '')).startswith('3.') or not isinstance(spec.get('paths'), dict):
+        raise ValueError('Supply OpenAPI 3 JSON objects with a paths object.')
+    for path, item in spec['paths'].items():
+        if not isinstance(path, str) or not path.startswith('/') or not isinstance(item, dict):
+            raise ValueError('Each paths entry must be a slash-prefixed path and an object.')
+        for name, operation in [('path', item)] + [(k, v) for k, v in item.items() if k in METHODS]:
+            if not isinstance(operation, dict):
+                raise ValueError('Each operation must be an object.')
+            params = operation.get('parameters', [])
+            if not isinstance(params, list) or any(not isinstance(p, dict) for p in params):
+                raise ValueError('Parameters must be an array of objects.')
+            for param in params:
+                if '$ref' not in param and (not isinstance(param.get('name'), str) or param.get('in') not in ('query', 'path', 'header', 'cookie')):
+                    raise ValueError('Inline parameters need a name and a valid location.')
+                if 'required' in param and not isinstance(param['required'], bool):
+                    raise ValueError('Parameter required flags must be booleans.')
+            if not isinstance(operation.get('responses', {}), dict) or not isinstance(operation.get('requestBody', {}), dict):
+                raise ValueError('Responses and requestBody must be objects.')
+            body = operation.get('requestBody', {})
+            if 'required' in body and not isinstance(body['required'], bool):
+                raise ValueError('Request body required flags must be booleans.')
+
+
 def analyze(before, after):
     """Find a documented subset of OpenAPI 3 breaking changes, without executing specs."""
     for spec in (before, after):
-        if not isinstance(spec, dict) or not str(spec.get('openapi', '')).startswith('3.') or not isinstance(spec.get('paths'), dict):
-            raise ValueError('Supply OpenAPI 3 JSON objects with a paths object.')
+        validate_spec(spec)
     changes = []
 
     def add(kind, pointer, message):
@@ -76,13 +100,19 @@ def generate_plan(report):
     start = time.monotonic()
     try:
         with urllib.request.urlopen(req, timeout=90) as response:
-            data = json.loads(response.read(2_000_001))
+            raw = response.read(2_000_001)
+            if len(raw) > 2_000_000:
+                raise ValueError('Nebius response exceeded the 2 MB limit.')
+            data = json.loads(raw)
     except urllib.error.HTTPError as exc:
         raise ValueError(f'Nebius returned HTTP {exc.code}; check account, credits and model access.') from None
     except (urllib.error.URLError, TimeoutError):
         raise ValueError('Nebius inference could not be reached; retry after checking connectivity.') from None
-    choice = data['choices'][0]
-    if choice.get('finish_reason') == 'length':
-        raise ValueError('Model response was truncated; no plan accepted.')
-    plan = validate_plan(json.loads(choice['message']['content']), report['changes'])
+    try:
+        choice = data['choices'][0]
+        if choice.get('finish_reason') == 'length':
+            raise ValueError('Model response was truncated; no plan accepted.')
+        plan = validate_plan(json.loads(choice['message']['content']), report['changes'])
+    except (KeyError, IndexError, TypeError, AttributeError):
+        raise ValueError('Nebius returned a malformed completion; no plan accepted.') from None
     return {**plan, 'provider': 'Nebius Token Factory', 'model': data.get('model', model), 'usage': data.get('usage', {}), 'duration_ms': round((time.monotonic() - start) * 1000), 'note': 'References validated; migration suggestions require developer review. No tests were executed.'}

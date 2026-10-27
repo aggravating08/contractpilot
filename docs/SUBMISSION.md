@@ -1,7 +1,7 @@
 # ContractPilot — submission preparation
 
-Team: Asiya Ali and Taaha Younas. Taaha has been invited via Devpost; acceptance pending.
-Proposed track: Coding and Agentic Engineering.
+Team: Asiya Ali and Taaha Younas. Both members are now listed on the Devpost team.
+Recommended track: Best Apps and Agents.
 Deadline: October 30, 2026 at 22:00 Pakistan time.
 
 ## Inspiration
@@ -26,7 +26,7 @@ This is a bounded checker, not a complete OpenAPI compatibility implementation. 
 
 ## Remaining before final entry
 
-- Taaha accepts the team invitation.
+- [x] Taaha accepted the team invitation.
 - Complete Nebius sign-in, verify credits and select an available NVIDIA model.
 - Run the live path, inspect semantic correctness and save sanitized evidence.
 - Record a working demonstration under three minutes and publish it on YouTube.

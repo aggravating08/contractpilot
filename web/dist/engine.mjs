@@ -1,6 +1,19 @@
 const methods=new Set(['get','post','put','patch','delete','head','options','trace']);
 export async function analyze(before,after){
- for(const spec of [before,after])if(!spec||Array.isArray(spec)||!String(spec.openapi).startsWith('3.')||!spec.paths||typeof spec.paths!=='object'||Array.isArray(spec.paths))throw Error('Supply OpenAPI 3 JSON objects with a paths object.');
+ const object=v=>v!==null&&typeof v==='object'&&!Array.isArray(v);
+ for(const spec of [before,after]){
+ if(!object(spec)||!String(spec.openapi).startsWith('3.')||!object(spec.paths))throw Error('Supply OpenAPI 3 JSON objects with a paths object.');
+ for(const[path,item]of Object.entries(spec.paths)){
+ if(!path.startsWith('/')||!object(item))throw Error('Each paths entry must be a slash-prefixed path and an object.');
+ for(const operation of [item,...Object.entries(item).filter(([k])=>methods.has(k)).map(([,v])=>v)]){
+ if(!object(operation))throw Error('Each operation must be an object.');
+ const params=operation.parameters??[];
+ if(!Array.isArray(params)||('parameters'in operation&&operation.parameters===null)||params.some(p=>!object(p)))throw Error('Parameters must be an array of objects.');
+ for(const p of params){if(!('$ref'in p)&&(typeof p.name!=='string'||!['query','path','header','cookie'].includes(p.in)))throw Error('Inline parameters need a name and a valid location.');if('required'in p&&typeof p.required!=='boolean')throw Error('Parameter required flags must be booleans.');}
+ if(('responses'in operation&&!object(operation.responses))||('requestBody'in operation&&!object(operation.requestBody)))throw Error('Responses and requestBody must be objects.');
+ if(operation.requestBody&&'required'in operation.requestBody&&typeof operation.requestBody.required!=='boolean')throw Error('Request body required flags must be booleans.');
+ }}}
+
  const changes=[];
  const add=async(kind,pointer,message)=>{const text=JSON.stringify({kind,message,pointer});const hash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text));changes.push({kind,pointer,message,id:Array.from(new Uint8Array(hash)).map(x=>x.toString(16).padStart(2,'0')).join('').slice(0,16)});};
  for(const[path,oldPath]of Object.entries(before.paths)){const newPath=after.paths[path]||{};for(const[method,old]of Object.entries(oldPath)){if(!methods.has(method))continue;const pointer='/paths/'+path.replaceAll('~','~0').replaceAll('/','~1')+'/'+method,newOp=newPath[method];if(!newOp){await add('operation_removed',pointer,`${method.toUpperCase()} ${path} was removed.`);continue;}

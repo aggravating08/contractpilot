@@ -66,3 +66,31 @@ class CompatibilityTests(unittest.TestCase):
             request.assert_not_called()
 
 if __name__ == '__main__': unittest.main()
+
+class MalformedInputTests(unittest.TestCase):
+    def test_nested_input_errors_are_actionable(self):
+        for paths in ({'/bad':None},{'/bad':{'get':None}},{'/bad':{'get':{'parameters':[None]}}},{'/bad':{'get':{'parameters':None}}},{'/bad':{'get':{'responses':[]}}},{'/bad':{'get':{'requestBody':None}}},{'/bad':{'get':{'parameters':[{'name':'x','in':'query','required':'false'}]}}}):
+            with self.subTest(paths=paths),self.assertRaises(ValueError):
+                spec={'openapi':'3.0.3','paths':paths};analyze(spec,spec)
+
+class ProviderContractTests(unittest.TestCase):
+    def call(self,payload):
+        from unittest.mock import MagicMock
+        response=MagicMock();response.__enter__.return_value.read.return_value=payload
+        env={'NEBIUS_API_KEY':'test-only-key','NEBIUS_MODEL':'nvidia/test'}
+        with patch.dict('os.environ',env),patch('urllib.request.urlopen',return_value=response) as request:
+            result=generate_plan({'changes':[{'id':'known','message':'An operation was removed.'}]})
+            req=request.call_args.args[0]
+            self.assertEqual(req.full_url,'https://api.tokenfactory.nebius.com/v1/chat/completions')
+            self.assertNotIn('test-only-key',req.data.decode())
+            return result
+    def test_valid_completion(self):
+        payload={'model':'nvidia/test','usage':{'completion_tokens':10},'choices':[{'finish_reason':'stop','message':{'content':json.dumps({'steps':[{'action':'Review affected client calls.','change_ids':['known']}]})}}]}
+        result=self.call(json.dumps(payload).encode());self.assertEqual(result['provider'],'Nebius Token Factory');self.assertEqual(result['steps'][0]['change_ids'],['known'])
+    def test_bad_envelopes_fail_as_validation_errors(self):
+        for payload in ({'choices':[]},{'choices':[None]},{'choices':[{'message':{'content':None}}]},[],{}):
+            with self.subTest(payload=payload),self.assertRaises(ValueError):self.call(json.dumps(payload).encode())
+    def test_truncated_completion_rejected(self):
+        with self.assertRaisesRegex(ValueError,'truncated'):self.call(b'{"choices":[{"finish_reason":"length"}]}')
+    def test_oversized_completion_rejected(self):
+        with self.assertRaisesRegex(ValueError,'2 MB'):self.call(b' '*2_000_001)

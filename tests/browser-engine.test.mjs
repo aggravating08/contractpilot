@@ -7,3 +7,5 @@ await assert.rejects(()=>analyze({swagger:'2.0',paths:{}},after));
 const unicode=structuredClone(before);unicode.paths['/مرحبا:one,two']={get:{responses:{200:{description:'ok'}}}};const js=await analyze(unicode,before);
 const parity=spawnSync('python3',['-c','import json,sys;from contractpilot.core import analyze;data=json.load(sys.stdin);print(json.dumps(analyze(*data)))'],{encoding:'utf8',input:JSON.stringify([unicode,before])});assert.equal(parity.status,0);assert.deepEqual(js,{...JSON.parse(parity.stdout),mode:'analysis-only'});
 console.log('5 browser-engine checks passed, including Python parity and Unicode.');
+for(const paths of [{'/bad':null},{'/bad':{get:null}},{'/bad':{get:{parameters:[null]}}},{'/bad':{get:{parameters:null}}},{'/bad':{get:{responses:[]}}},{'/bad':{get:{requestBody:null}}},{'/bad':{get:{parameters:[{name:'x',in:'query',required:'false'}]}}}])await assert.rejects(()=>analyze({openapi:'3.0.3',paths},{openapi:'3.0.3',paths}));
+console.log('7 malformed-input browser checks passed.');

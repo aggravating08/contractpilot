@@ -1,6 +1,6 @@
 # ContractPilot
 
-A focused API migration assistant for the Nebius x NVIDIA Global AI Hackathon. Team: Asiya Ali and Taaha Younas. Taaha’s Devpost invitation has been sent and is awaiting acceptance.
+A focused API migration assistant for the Nebius x NVIDIA Global AI Hackathon. Team: Asiya Ali and Taaha Younas. Both members are now listed on the Devpost team.
 
 ContractPilot compares two OpenAPI 3 JSON documents, identifies a bounded set of breaking changes, and can ask an NVIDIA model on Nebius Token Factory for a migration plan. Each accepted migration step must reference a detected change. It never executes generated code, tests, or instructions from input specifications.
 
@@ -39,4 +39,10 @@ The static preview performs browser-local comparison only; it does not have live
 
 CLI and local browser app with regression tests. Real Nebius/NVIDIA inference has **not** yet been verified. Source is published at https://github.com/aggravating08/contractpilot. A private analysis-only preview is deployed at https://contractpilot-asiya-taaha.asiyaaaaa8.chatgpt.site. No live AI demonstration video or final Devpost entry is claimed. This is preparation, not a completed eligible submission.
 
-Proposed track: Coding and Agentic Engineering. Deadline: October 30, 2026, 22:00 PKT. Final entry needs actual Nebius/NVIDIA execution evidence, accessible test build/demo, public licensed repository, English description, tool feedback, and a public YouTube video under three minutes.
+Recommended track: Best Apps and Agents. The current product is a review and planning application; it does not write, execute and test code autonomously. Deadline: October 30, 2026, 22:00 PKT. Final entry needs actual Nebius/NVIDIA execution evidence, accessible test build/demo, public licensed repository, English description, tool feedback, and a public YouTube video under three minutes.
+
+## Judge access still to complete
+
+The private Sites preview is for owner review only and is not the final judge-access URL. The public source/test build can be downloaded at https://github.com/aggravating08/contractpilot/archive/refs/heads/main.zip . Its analysis mode runs without credentials; live planning needs Nebius access. Before submission, provide judges a free authenticated or public instance with server-side inference access, clear testing instructions and sufficient credits, available through December 15, 2026 at 20:00 UTC. Do not require judges to supply their own paid provider account or publish an API key in this repository.
+
+Country onboarding and missing credits are handled case by case through the Nebius Discord according to the [official FAQ](https://nebiusglobalaihackathon.devpost.com/details/faqs). An NVIDIA model on another provider does not satisfy the required Nebius runtime integration.
