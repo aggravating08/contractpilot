@@ -1,6 +1,6 @@
 # ContractPilot
 
-A focused API migration assistant for the Nebius x NVIDIA Global AI Hackathon. Team: Asiya Ali and Taaha Younas. Devpost membership invitation is pending exact account identification.
+A focused API migration assistant for the Nebius x NVIDIA Global AI Hackathon. Team: Asiya Ali and Taaha Younas. Taaha’s Devpost invitation has been sent and is awaiting acceptance.
 
 ContractPilot compares two OpenAPI 3 JSON documents, identifies a bounded set of breaking changes, and can ask an NVIDIA model on Nebius Token Factory for a migration plan. Each accepted migration step must reference a detected change. It never executes generated code, tests, or instructions from input specifications.
 
